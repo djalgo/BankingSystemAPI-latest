@@ -54,6 +54,10 @@ namespace BankingSystemAPI.Controllers
             }
             var accountUserId = Guid.NewGuid().ToString();
             var accountList = new List<Account>();
+
+            if (EmailAlreadyExists(userDto.Email)){
+                return BadRequest("Email should be unique for a record.");
+            }
             
             foreach (var account in userDto.Accounts)
             {
@@ -150,6 +154,23 @@ namespace BankingSystemAPI.Controllers
             _bankingOperationsRepository.DeleteAccountForUser(userAccount, accountNumber);
             _logger.LogInformation($"Deleted account from user {accountUserId}");
             return Ok();
+        }
+
+        private bool EmailAlreadyExists(string email)
+        {
+            if(email != null)
+            {
+                var users = _bankingOperationsRepository.GetUsers();
+                if(users == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    return users.Any(x => x.Email == email);    
+                }
+            }
+            return false;
         }
     }
 }
