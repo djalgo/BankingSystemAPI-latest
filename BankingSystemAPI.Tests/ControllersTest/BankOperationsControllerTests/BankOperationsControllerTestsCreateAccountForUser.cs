@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 {
     [TestFixture]
-    internal class BankOperationsControllerTestsCreateAccountForUser
+    internal class BankOperationsRepositoryTestsGetUsers
     {
         private BankOperationsController _controller;
         private IBankingOperationsRepository _repository;

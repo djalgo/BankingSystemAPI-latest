@@ -34,6 +34,10 @@ namespace BankingSystemAPI.Controllers
             return _bankingOperationsRepository.GetUsers();
         }
 
+        /// <summary>
+        /// Post new user account.
+        /// </summary>
+        /// <returns>The new user created.</returns>
         // POST api/<ValuesController>
         [HttpPost]
         [Route("AddUser")]
@@ -45,27 +49,26 @@ namespace BankingSystemAPI.Controllers
 
             if (userDto.Accounts == null)
             {
-                _logger.LogInformation($"User must have at least one account associated.");
+                _logger.LogError($"User must have at least one account associated.");
                 return BadRequest("User must have at least one account associated.");
             }
             var accountUserId = Guid.NewGuid().ToString();
             var accountList = new List<Account>();
-            if (userDto.Accounts != null)
+            
+            foreach (var account in userDto.Accounts)
             {
-                foreach (var account in userDto.Accounts)
-                {
-                    if(account.Balance < 100)
-                    {
-                        return BadRequest($"The balance mustn't be less that 100$ at any time.");
-                    }
-                    accountList.Add(new Account
-                    {
-                        AccountUserId = accountUserId,
-                        AccountNumber = Guid.NewGuid().ToString(),
-                        Balance = account.Balance
-                    });
-                }
-            }
+               if(account.Balance < 100)
+               {
+                    _logger.LogError($"The balance mustn't be less that 100$ at any time.");
+                     return BadRequest($"The balance mustn't be less that 100$ at any time.");
+               }
+               accountList.Add(new Account
+               {
+                  AccountUserId = accountUserId,
+                  AccountNumber = Guid.NewGuid().ToString(),
+                  Balance = account.Balance
+               });
+             }
             
             var user = new UserAccount()
             {
@@ -81,24 +84,30 @@ namespace BankingSystemAPI.Controllers
 
         }
 
+        /// <summary>
+        /// Creates a new account for user.
+        /// </summary>
+        /// <returns>The new created acount</returns>
         [HttpPost]
         [Route("CreateAccountForUser/{accountUserId}")]
         public IActionResult CreateAccount(string accountUserId, [FromBody] AccountDto accountDto)
         {
             if (accountDto == null)
             {
+                _logger.LogError($"Account can't be null");
                 return BadRequest("Account can't be null");
             }
             var userAccount = _bankingOperationsRepository.GetUser(accountUserId);
 
             if (userAccount == null)
             {
+                _logger.LogError($"User Account couldn't be found");
                 return NotFound($"User Account couldn't be found");
             }
 
             if (accountDto.Balance < 100)
             {
-                _logger.LogInformation($"Account must have minimum of 100$ at any time");
+                _logger.LogError($"Account must have minimum of 100$ at any time");
                 return BadRequest($"Account must have minimum of 100$ at any time");
             }
             //var accountUserId = Guid.NewGuid().ToString();
@@ -115,6 +124,10 @@ namespace BankingSystemAPI.Controllers
 
         }
 
+        /// <summary>
+        /// Deletes a acount for the user.
+        /// </summary>
+        /// <returns></returns>
         // DELETE api/<ValuesController>/5
         [HttpDelete]
         [Route("DeleteAccountForUser/{accountUserId}")]
@@ -124,13 +137,13 @@ namespace BankingSystemAPI.Controllers
 
             if(userAccount == null)
             {
-                _logger.LogInformation($"User account not found -{accountUserId}");
+                _logger.LogError($"User account not found -{accountUserId}");
                 return NotFound($"User account not found - {accountUserId}");
             }
 
             var account = userAccount.Accounts.Where(x => x.AccountNumber == accountNumber).FirstOrDefault();
             if (account == null) {
-                _logger.LogInformation($"The account number was not found for the user - {accountNumber}");
+                _logger.LogError($"The account number was not found for the user - {accountNumber}");
                 return NotFound($"The account number was not found for the user - {accountNumber}");
             }
 

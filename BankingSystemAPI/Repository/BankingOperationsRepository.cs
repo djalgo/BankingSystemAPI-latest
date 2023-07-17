@@ -1,13 +1,15 @@
 ﻿using BankingSystemAPI.Models;
+using BankingSystemAPI.Services;
 
 namespace BankingSystemAPI.Repository
 {
     public class BankingOperationsRepository : IBankingOperationsRepository
     {
+        private readonly ILoggingService _logger;
         List<UserAccount> users = new List<UserAccount>();
-        public BankingOperationsRepository()
+        public BankingOperationsRepository(ILoggingService logger)
         {
-            
+            _logger = logger;
         }
 
         public UserAccount AddUser(UserAccount user)

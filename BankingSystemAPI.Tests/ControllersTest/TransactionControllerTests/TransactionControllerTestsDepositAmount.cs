@@ -122,7 +122,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                 Assert.That(badRequestResult_Zero_Amount.Value, Is.EqualTo($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction."));
                 Assert.That(400, Is.EqualTo(badRequestresult_greaterThan_10000.StatusCode));
                 Assert.That(badRequestresult_greaterThan_10000.Value, Is.EqualTo($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction."));
-                _logger.Received(2).LogInformation($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction.");
+                _logger.Received(2).LogError($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction.");
 
 
             });

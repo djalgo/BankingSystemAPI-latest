@@ -117,10 +117,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             var NotFoundResult = result as ObjectResult;
             Assert.That(404, Is.EqualTo(NotFoundResult.StatusCode));
 
-            _logger.Received(1).LogInformation($"The account number was not found for the user - {account3}");
-
-
-
+            _logger.Received(1).LogError($"The account number was not found for the user - {account3}");
         }
 
 
@@ -147,7 +144,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             var NotFoundResult = result as ObjectResult;
             Assert.That(404, Is.EqualTo(NotFoundResult.StatusCode));
 
-            _logger.Received(1).LogInformation($"User account not found -{id}");
+            _logger.Received(1).LogError($"User account not found -{id}");
 
 
 
