@@ -134,7 +134,7 @@ namespace BankingSystemAPI.Controllers
         /// <returns></returns>
         // DELETE api/<ValuesController>/5
         [HttpDelete]
-        [Route("DeleteAccountForUser/{accountUserId}")]
+        [Route("DeleteAccountForUser/{accountUserId}/{accountNumber}")]
         public IActionResult DeleteAccountFromUser(string accountUserId, string accountNumber)
         {
             var userAccount = _bankingOperationsRepository.GetUser(accountUserId);
