@@ -81,5 +81,27 @@ namespace BankingSystemAPI.Tests.ServiceTests.TransactionServiceTests
 
         }
 
+        [Test]
+        public void Validate_WhenExceptionoccured_failure()
+        {
+            decimal amount = -1;
+            var error = new List<AmountValidation>()
+             {
+                new AmountValidation { StatusCode = 400, ErrorMessage =$"The amount must be non-negative and non-zero." }
+             };
+
+            //Act
+
+            var result = _service.ValidateDepositAmountAsync(amount).Result;
+
+            //Assert
+            Assert.Multiple(() => {
+                //Assert
+                Assert.That(result.Select(x => x.StatusCode), Is.EqualTo(error.Select(x => x.StatusCode)));
+                Assert.That(result.Select(x => x.ErrorMessage), Is.EqualTo(error.Select(x => x.ErrorMessage)));
+            });
+
+        }
+
     }
 }

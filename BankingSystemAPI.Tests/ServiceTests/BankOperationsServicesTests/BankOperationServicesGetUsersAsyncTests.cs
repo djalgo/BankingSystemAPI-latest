@@ -80,7 +80,6 @@ namespace BankingSystemAPI.Tests.ServiceTests.BankOperationsServicesTests
             Assert.That(result, Is.EqualTo(userAccounts));
 
         }
-
     }
 }
      

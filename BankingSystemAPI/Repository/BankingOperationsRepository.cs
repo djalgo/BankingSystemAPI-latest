@@ -27,14 +27,29 @@ namespace BankingSystemAPI.Repository
         public async Task DeleteAccountForUserAsync(UserAccount user, string accountNumber)
         {
             var account = user.Accounts.FirstOrDefault(a => a.AccountNumber == accountNumber);
-            await Task.Run(() => user.Accounts.Remove(account));
+            try
+            {
+                if (account != null)
+                {
+                    await Task.Run(() => user.Accounts.Remove(account));
+                }
+            }
+            catch {
+                throw;
+            }
         }
 
         public async Task<Account> DepositAmountAsync(UserAccount user, Account account, decimal amount)
         {
-            var balance = account.Balance;
-            balance += amount;
-            await Task.Run(() => account.Balance = balance);
+            try
+            {
+                var balance = account.Balance;
+                balance += amount;
+                await Task.Run(() => account.Balance = balance);
+            }
+            catch {
+                throw;
+            }
             return account;
         }
 
@@ -53,9 +68,16 @@ namespace BankingSystemAPI.Repository
 
         public async Task<Account> WithdrawAmountAsync(UserAccount user, Account account, decimal amount)
         {
-            var balance = account.Balance;
-            balance -= amount;
-            await Task.Run(() => account.Balance = balance);
+            try
+            {
+                var balance = account.Balance;
+                balance -= amount;
+                await Task.Run(() => account.Balance = balance);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
             return account;
         }
     }

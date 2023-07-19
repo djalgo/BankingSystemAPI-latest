@@ -16,9 +16,9 @@ namespace BankingSystemAPI.Controllers
 
         public TransactionController(IBankOperationsService bankOperationsService, ITransactionService transactionService, ILoggingService logger)
         {
-            _bankOperationsService = bankOperationsService;
-            _transactionService = transactionService;
-            _logger = logger;
+            _bankOperationsService = bankOperationsService ?? throw new ArgumentNullException(nameof(bankOperationsService));
+            _transactionService = transactionService ?? throw new ArgumentNullException(nameof(transactionService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>

@@ -35,7 +35,7 @@ if (app.Environment.IsDevelopment())
             options.Run(
                     async context =>
                     {
-                        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        context.Response.StatusCode = (int)HttpStatusCode.BadGateway;
                         var ex = context.Features.Get<IExceptionHandlerFeature>();
                         if (ex != null)
                         {

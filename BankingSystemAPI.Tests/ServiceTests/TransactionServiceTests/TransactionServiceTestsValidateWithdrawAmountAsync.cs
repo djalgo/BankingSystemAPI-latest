@@ -133,5 +133,18 @@ namespace BankingSystemAPI.Tests.ServiceTests.TransactionServiceTests
             });
 
         }
+
+        [Test]
+        public void Validate_WhenExceptionOccured_failure()
+        {
+            var id = Guid.NewGuid().ToString();
+            decimal amount = 150;
+            var account = new Account
+            {
+                Balance = 0
+            };
+            Assert.That(() => _service.ValidateWithdrawAmountAsync(account, amount).Result, Throws.Exception.TypeOf<AggregateException>());
+           
+        }
     }
 }

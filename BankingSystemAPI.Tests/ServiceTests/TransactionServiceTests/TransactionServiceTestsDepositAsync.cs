@@ -70,6 +70,5 @@ namespace BankingSystemAPI.Tests.ServiceTests.TransactionServiceTests
             //Assert
             Assert.That(result, Is.EqualTo(responseAccount));
         }
-
     }
 }

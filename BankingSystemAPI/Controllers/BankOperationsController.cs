@@ -57,10 +57,8 @@ namespace BankingSystemAPI.Controllers
             if (await EmailAlreadyExistsAsync(userDto.Email)){
                 return BadRequest("Email should be unique for a record.");
             }
-
-            var result = new UserAccount();
             
-            result = await _bankOperationsService.AddNewUserAccountAsync(userDto);
+            var result = await _bankOperationsService.AddNewUserAccountAsync(userDto);
             
             return Ok(result);
 
@@ -107,23 +105,30 @@ namespace BankingSystemAPI.Controllers
         [HttpDelete]
         [Route("DeleteAccountForUser/{accountUserId}/{accountNumber}")]
         public async Task<IActionResult> DeleteAccountFromUserAsync(string accountUserId, string accountNumber)
-        {
-            var userAccount = await _bankOperationsService.GetUserAccountAsync(accountUserId);
-
-            if(userAccount == null)
+        { 
+            try
             {
-                _logger.LogError($"User account not found -{accountUserId}");
-                return NotFound($"User account not found - {accountUserId}");
-            }
+                var userAccount = await _bankOperationsService.GetUserAccountAsync(accountUserId);
 
-            var account = userAccount.Accounts.Where(x => x.AccountNumber == accountNumber).FirstOrDefault();
-            if (account == null) {
-                _logger.LogError($"The account number was not found for the user - {accountNumber}");
-                return NotFound($"The account number was not found for the user - {accountNumber}");
-            }
+                if(userAccount == null)
+                {
+                    _logger.LogError($"User account not found -{accountUserId}");
+                    return NotFound($"User account not found - {accountUserId}");
+                }
 
-            await _bankOperationsService.DeleteAccountForUserAsync(userAccount, accountNumber);
-            _logger.LogInformation($"Deleted account from user {accountUserId}");
+                var account = userAccount.Accounts.Where(x => x.AccountNumber == accountNumber).FirstOrDefault();
+                if (account == null) {
+                    _logger.LogError($"The account number was not found for the user - {accountNumber}");
+                    return NotFound($"The account number was not found for the user - {accountNumber}");
+                }
+
+                await _bankOperationsService.DeleteAccountForUserAsync(userAccount, accountNumber);
+                _logger.LogInformation($"Deleted account from user {accountUserId}");
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
             return Ok();
         }
 

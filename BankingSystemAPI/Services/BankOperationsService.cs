@@ -24,7 +24,15 @@ namespace BankingSystemAPI.Services
         
         public async Task<IEnumerable<UserAccount>> GetUserAccountsAsync()
         {
-            var result = await _bankingOperationsRepository.GetUsersAsync();
+            IEnumerable<UserAccount> result = new List<UserAccount>();
+            try
+            {
+                result = await _bankingOperationsRepository.GetUsersAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
             return result;
         }
 
@@ -57,7 +65,14 @@ namespace BankingSystemAPI.Services
 
         public async Task<UserAccount> GetUserAccountAsync(string userId)
         {
-            return await _bankingOperationsRepository.GetUserAsync(userId);
+            try
+            {
+                return await _bankingOperationsRepository.GetUserAsync(userId);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public async Task<UserAccount> CreateAccountForUserAsync(UserAccount user, AccountDto userAccount)
@@ -68,13 +83,20 @@ namespace BankingSystemAPI.Services
                 AccountNumber = Guid.NewGuid().ToString(),
                 Balance = userAccount.Balance
             };
-
+            
             return await _bankingOperationsRepository.CreateAccountForUserAsync(user, account);
         }
 
         public async Task DeleteAccountForUserAsync(UserAccount user, string accountNumber)
         {
-            await _bankingOperationsRepository.DeleteAccountForUserAsync(user, accountNumber);
+            try
+            {
+                await _bankingOperationsRepository.DeleteAccountForUserAsync(user, accountNumber);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
             _logger.LogInformation($"Account deleted - {accountNumber}");
         }
     }
