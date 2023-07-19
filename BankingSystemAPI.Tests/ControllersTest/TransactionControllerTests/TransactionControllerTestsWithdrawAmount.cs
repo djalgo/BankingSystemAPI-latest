@@ -16,16 +16,18 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
     internal class TransactionControllerTestsWithdrawAmount
     {
         private TransactionController _controller;
-        private IBankingOperationsRepository _repository;
+        private IBankOperationsService _service;
+        private ITransactionService _transactionService;
         private ILoggingService _logger;
 
         [SetUp]
         public void SetUp()
         {
             //using NSubstitute for mocking here because I have experience with this framework
-            _repository = Substitute.For<IBankingOperationsRepository>();
+            _service = Substitute.For<IBankOperationsService>();
             _logger = Substitute.For<ILoggingService>();
-            _controller = new TransactionController(_repository, _logger);
+            _transactionService = Substitute.For<ITransactionService>();
+            _controller = new TransactionController(_service, _transactionService, _logger);
         }
 
         [Test]
@@ -62,10 +64,10 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 
             };
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
-            _repository.DepositAmount(Arg.Any<UserAccount>(), Arg.Any<Account>(), Arg.Any<decimal>()).Returns(responseAccount);
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
+            _transactionService.DepositAmountAsync(Arg.Any<UserAccount>(), Arg.Any<Account>(), Arg.Any<decimal>()).Returns(responseAccount);
             //Act
-            var result = _controller.Deposit(id, account, amount);
+            var result = _controller.DepositAsync(id, account, amount).Result;
 
 
             //Assert
@@ -104,12 +106,19 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                 }
             };
 
-            
-
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
-           
+            var accountDetail = userAccount.Accounts.Where(x => x.AccountNumber == account).FirstOrDefault();
+            var validationErrors = new List<AmountValidation>
+            {
+               new AmountValidation
+               {
+                   StatusCode=400,
+                   ErrorMessage =$"Insufficient funds - {account}"
+               }
+            };
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
+            _transactionService.ValidateWithdrawAmountAsync(Arg.Any<Account>(), Arg.Any<decimal>()).Returns(validationErrors);
             //Act
-            var result = _controller.Withdraw(id, account, amount);
+            var result = _controller.WithdrawAsync(id, account, amount).Result;
 
 
             //Assert
@@ -118,7 +127,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             Assert.Multiple(() =>
             {
                 Assert.That(400, Is.EqualTo(badRequestResult.StatusCode));
-                Assert.That(badRequestResult.Value, Is.EqualTo($"Insufficient funds - {account}"));
+                Assert.That(badRequestResult.Value, Is.EqualTo(validationErrors));
             });
 
         }
@@ -146,13 +155,23 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                     }
                 }
             };
+            var accountDetail = userAccount.Accounts.Where(x => x.AccountNumber == account).FirstOrDefault();
+            var validationErrors = new List<AmountValidation>
+            {
+               new AmountValidation
+               {
+                   StatusCode=400,
+                   ErrorMessage =$"Invalid Amount. The account must have at least 100$ at any point. " +
+                    $"Current amount will be 40$."
+               }
+            };
 
 
-
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
+            _transactionService.ValidateWithdrawAmountAsync(Arg.Any<Account>(), Arg.Any<decimal>()).Returns(validationErrors);
 
             //Act
-            var result = _controller.Withdraw(id, account, amount);
+            var result = _controller.WithdrawAsync(id, account, amount).Result;
 
 
             //Assert
@@ -161,8 +180,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             Assert.Multiple(() =>
             {
                 Assert.That(400, Is.EqualTo(badRequestResult.StatusCode));
-                Assert.That(badRequestResult.Value, Is.EqualTo($"Invalid Amount. The account must have at least 100$ at any point. " +
-                    $"Current amount will be {userAccount.Accounts[0].Balance - amount}$."));
+                Assert.That(badRequestResult.Value, Is.EqualTo(validationErrors));
             });
 
         }
@@ -191,13 +209,22 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                 }
             };
 
+            var validationErrors = new List<AmountValidation>
+            {
+               new AmountValidation
+               {
+                   StatusCode=400,
+                   ErrorMessage =$"The amount must be non-negative or non-zero or less than 10000$ in a single transaction."
+               }
+            };
 
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
+
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
             var percentWithdrawal = (int)amount / userAccount.Accounts[0].Balance * 100;
-
+            _transactionService.ValidateWithdrawAmountAsync(Arg.Any<Account>(), Arg.Any<decimal>()).Returns(validationErrors);
             //Act
-            var result = _controller.Withdraw(id, account, amount);
+            var result = _controller.WithdrawAsync(id, account, amount).Result;
 
 
             //Assert
@@ -206,8 +233,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             Assert.Multiple(() =>
             {
                 Assert.That(400, Is.EqualTo(badRequestResult.StatusCode));
-                Assert.That(badRequestResult.Value, Is.EqualTo($"Invalid Amount. Withdrawing more than 90% of the current balance is not allowed. " +
-                    $"Current withdrawal amount is {percentWithdrawal}% of the balance."));
+                Assert.That(badRequestResult.Value, Is.EqualTo(validationErrors));
             });
 
         }

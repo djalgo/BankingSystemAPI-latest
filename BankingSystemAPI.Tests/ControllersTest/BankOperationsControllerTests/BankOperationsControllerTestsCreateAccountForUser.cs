@@ -16,16 +16,16 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
     internal class BankOperationsRepositoryTestsGetUsers
     {
         private BankOperationsController _controller;
-        private IBankingOperationsRepository _repository;
+        private IBankOperationsService _service;
         private ILoggingService _logger;
 
         [SetUp]
         public void SetUp()
         {
             //using NSubstitute for mocking here because I have experience with this framework
-            _repository = Substitute.For<IBankingOperationsRepository>();
+            _service = Substitute.For<IBankOperationsService>();
             _logger = Substitute.For<ILoggingService>();
-            _controller = new BankOperationsController(_repository, _logger);
+            _controller = new BankOperationsController(_service, _logger);
         }
 
         [Test]
@@ -79,10 +79,10 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                 }
             };
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
-            _repository.CreateAccountForUser(Arg.Any<UserAccount>(), Arg.Any<Account>()).Returns(responseAccount);
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
+            _service.CreateAccountForUserAsync(Arg.Any<UserAccount>(), Arg.Any<AccountDto>()).Returns(responseAccount);
             //Act
-            var result = _controller.CreateAccount(id, accountDto);
+            var result = _controller.CreateAccountForUserAsync(id, accountDto).Result;
 
 
             //Assert
@@ -110,13 +110,13 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                     Balance = 120,
 
                 };
-            
-           
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
+
+
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
             
             //Act
-            var result = _controller.CreateAccount(id, accountDto);
+            var result = _controller.CreateAccountForUserAsync(id, accountDto).Result;
 
 
             //Assert
@@ -158,12 +158,12 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                     Balance = 80,
 
                 };
-            
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
+
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
            
             //Act
-            var result = _controller.CreateAccount(id, accountDto);
+            var result = _controller.CreateAccountForUserAsync(id, accountDto).Result;
 
 
             //Assert

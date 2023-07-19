@@ -10,28 +10,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
+namespace BankingSystemAPI.Tests.ServiceTests.BankOperationsServicesTests
 {
     [TestFixture]
-    internal class BankOperationsControllerTests
+    internal class BankOperationServicesGetUsersAsyncTests
     {
-        private BankOperationsController _controller;
-        private IBankOperationsService _service;
+        private BankOperationsService _service;
+        private IBankingOperationsRepository _repository;
         private ILoggingService _logger;
 
         [SetUp]
         public void SetUp()
         {
             //using NSubstitute for mocking here because I have experience with this framework
-            _service = Substitute.For<IBankOperationsService>();
+            _repository = Substitute.For<IBankingOperationsRepository>();
             _logger = Substitute.For<ILoggingService>();
-            _controller = new BankOperationsController(_service, _logger);
+            _service = new BankOperationsService(_repository, _logger);
         }
 
         [Test]
-        public void GetUserAccounts_ReturnsUserAccounts_WhenExists()
+        public void GetUserAccountsAsync_WhenSuccessful()
         {
-
             //Arrange
             var id = Guid.NewGuid().ToString();
             var account = Guid.NewGuid().ToString();
@@ -56,31 +55,32 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 
             };
 
-            _service.GetUserAccountsAsync().Returns(userAccounts);
+            _repository.GetUsersAsync().Returns(userAccounts);
             //Act
-            var result = _controller.GetUserAccountsAsync().Result;
-            var okResult = result as ObjectResult;
-
-
-            //Assert
-            Assert.That(okResult.Value, Is.EqualTo(userAccounts));
+            var result = _service.GetUserAccountsAsync().Result;
             
+            //Assert
+            Assert.That(result, Is.EqualTo(userAccounts));
+
         }
 
         [Test]
-        public void GetUserAccounts_ReturnsNull_WhenNoneExists()
+        public void GetUserAccountsAsync_WhenNoneExists_ReturnsEmpty()
         {
-
             //Arrange
+            var id = Guid.NewGuid().ToString();
+            var account = Guid.NewGuid().ToString();
             List<UserAccount> userAccounts = new List<UserAccount>();
 
-
-            _service.GetUserAccountsAsync().Returns(userAccounts);
+            _repository.GetUsersAsync().Returns(userAccounts);
             //Act
-            var result = _controller.GetUserAccountsAsync().Result;
-            var notFoundResult = result as ObjectResult;
+            var result = _service.GetUserAccountsAsync().Result;
+
             //Assert
-            Assert.That(notFoundResult.Value, Is.EqualTo(userAccounts));
+            Assert.That(result, Is.EqualTo(userAccounts));
+
         }
+
     }
 }
+     

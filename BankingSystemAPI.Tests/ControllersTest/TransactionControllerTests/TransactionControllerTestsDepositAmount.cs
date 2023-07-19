@@ -16,16 +16,18 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
     internal class TransactionControllerTestsDepositAmount
     {
         private TransactionController _controller;
-        private IBankingOperationsRepository _repository;
+        private IBankOperationsService _service;
+        private ITransactionService _transactionService;
         private ILoggingService _logger;
 
         [SetUp]
         public void SetUp()
         {
             //using NSubstitute for mocking here because I have experience with this framework
-            _repository = Substitute.For<IBankingOperationsRepository>();
+            _service = Substitute.For<IBankOperationsService>();
             _logger = Substitute.For<ILoggingService>();
-            _controller = new TransactionController(_repository, _logger);
+            _transactionService = Substitute.For<ITransactionService>();
+            _controller = new TransactionController(_service, _transactionService, _logger);
         }
 
         [Test]
@@ -62,10 +64,10 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 
             };
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
-            _repository.DepositAmount(Arg.Any<UserAccount>(), Arg.Any<Account>(), Arg.Any<decimal>()).Returns(responseAccount);
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
+            _transactionService.DepositAmountAsync(Arg.Any<UserAccount>(), Arg.Any<Account>(), Arg.Any<decimal>()).Returns(responseAccount);
             //Act
-            var result = _controller.Deposit(id, account, amount);
+            var result = _controller.DepositAsync(id, account, amount).Result;
 
 
             //Assert
@@ -104,12 +106,30 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                     }
                 }
             };
+            var validationErrorsZeroAmount = new List<AmountValidation>
+            {
+               new AmountValidation
+               {
+                   StatusCode=400,
+                   ErrorMessage =$"The amount must be non-negative and non-zero."
+               }
+            };
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
-            
+            var validationErrorsGreaterThan10000 = new List<AmountValidation>
+            {
+               new AmountValidation
+               {
+                   StatusCode=400,
+                   ErrorMessage =$"The amount must be non-negative or non-zero or less than 10000$ in a single transaction."
+               }
+            };
+
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
+            _transactionService.ValidateDepositAmountAsync(amount1).Returns(validationErrorsZeroAmount);
+            _transactionService.ValidateDepositAmountAsync(amount2).Returns(validationErrorsGreaterThan10000);
             //Act
-            var result_Zero_Amount = _controller.Deposit(id, account, amount1);
-            var result_greaterThan_10000 = _controller.Deposit(id, account, amount2);
+            var result_Zero_Amount = _controller.DepositAsync(id, account, amount1).Result;
+            var result_greaterThan_10000 = _controller.DepositAsync(id, account, amount2).Result;
 
 
             //Assert
@@ -119,11 +139,9 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             Assert.Multiple(() =>
             {
                 Assert.That(400, Is.EqualTo(badRequestResult_Zero_Amount.StatusCode));
-                Assert.That(badRequestResult_Zero_Amount.Value, Is.EqualTo($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction."));
+                Assert.That(badRequestResult_Zero_Amount.Value, Is.EqualTo(validationErrorsZeroAmount));
                 Assert.That(400, Is.EqualTo(badRequestresult_greaterThan_10000.StatusCode));
-                Assert.That(badRequestresult_greaterThan_10000.Value, Is.EqualTo($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction."));
-                _logger.Received(2).LogError($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction.");
-
+                Assert.That(badRequestresult_greaterThan_10000.Value, Is.EqualTo(validationErrorsGreaterThan10000));
 
             });
 

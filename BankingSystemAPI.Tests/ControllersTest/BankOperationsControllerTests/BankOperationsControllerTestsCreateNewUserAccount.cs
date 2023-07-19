@@ -13,19 +13,19 @@ using System.Threading.Tasks;
 namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 {
     [TestFixture]
-    internal class BankOperationsControllerTestsCreateNewUserAccount
+    internal class BankOperationServiceTestsAddNewUserAccount
     {
         private BankOperationsController _controller;
-        private IBankingOperationsRepository _repository;
+        private IBankOperationsService _service;
         private ILoggingService _logger;
 
         [SetUp]
         public void SetUp()
         {
             //using NSubstitute for mocking here because I have experience with this framework
-            _repository = Substitute.For<IBankingOperationsRepository>();
+            _service = Substitute.For<IBankOperationsService>();
             _logger = Substitute.For<ILoggingService>();
-            _controller = new BankOperationsController(_repository, _logger);
+            _controller = new BankOperationsController(_service, _logger);
         }
 
         [Test]
@@ -66,9 +66,9 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                     }
                 };
 
-            _repository.AddUser(Arg.Any<UserAccount>()).Returns(userAccountResponse);
+            _service.AddNewUserAccountAsync(Arg.Any<UserAccountDto>()).Returns(userAccountResponse);
             //Act
-            var result = _controller.PostNewUser(userAccount);
+            var result = _controller.AddNewUserAccountAsync(userAccount).Result;
 
 
             //Assert
@@ -76,7 +76,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 
             Assert.Multiple(() =>
             {
-                Assert.That(200, Is.EqualTo(okResult.StatusCode));
+                Assert.That(okResult.StatusCode, Is.EqualTo(200));
                 Assert.That(okResult.Value, Is.EqualTo(userAccountResponse));
             });
 
@@ -100,7 +100,7 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 
             //_repository.AddUser(Arg.Any<UserAccount>()).Returns(userAccountResponse);
             //Act
-            var result = _controller.PostNewUser(userAccount);
+            var result = _controller.AddNewUserAccountAsync(userAccount).Result;
 
 
             //Assert
@@ -130,10 +130,8 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
 
             };
 
-
-            //_repository.AddUser(Arg.Any<UserAccount>()).Returns(userAccountResponse);
             //Act
-            var result = _controller.PostNewUser(userAccount);
+            var result = _controller.AddNewUserAccountAsync(userAccount).Result;
 
 
             //Assert
@@ -141,10 +139,8 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             Assert.Multiple(() =>
             {
                 Assert.IsNotNull(badObjectResult);
-                Assert.That(400, Is.EqualTo(badObjectResult.StatusCode));
+                Assert.That(badObjectResult.StatusCode, Is.EqualTo(400));
             });
-
-
 
         }
     }

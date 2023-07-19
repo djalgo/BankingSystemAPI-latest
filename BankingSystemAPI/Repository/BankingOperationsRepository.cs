@@ -12,50 +12,50 @@ namespace BankingSystemAPI.Repository
             _logger = logger;
         }
 
-        public UserAccount AddUser(UserAccount user)
+        public async Task<UserAccount> AddUserAsync(UserAccount user)
         {
-            users.Add(user);
+            await Task.Run(() => users.Add(user));
             return user;
         }
 
-        public UserAccount CreateAccountForUser(UserAccount user, Account account)
+        public async Task<UserAccount> CreateAccountForUserAsync(UserAccount user, Account account)
         {
-            user.Accounts.Add(account);
+            await Task.Run(() => user.Accounts.Add(account));
             return user;
         }
 
-        public void DeleteAccountForUser(UserAccount user, string accountNumber)
+        public async Task DeleteAccountForUserAsync(UserAccount user, string accountNumber)
         {
             var account = user.Accounts.FirstOrDefault(a => a.AccountNumber == accountNumber);
-            user.Accounts.Remove(account);
+            await Task.Run(() => user.Accounts.Remove(account));
         }
 
-        public Account DepositAmount(UserAccount user, Account account, decimal amount)
+        public async Task<Account> DepositAmountAsync(UserAccount user, Account account, decimal amount)
         {
             var balance = account.Balance;
             balance += amount;
-            account.Balance = balance;
+            await Task.Run(() => account.Balance = balance);
             return account;
         }
 
-        public UserAccount GetUser(string id)
+        public async Task<UserAccount> GetUserAsync(string id)
         {
-            var userAccount = users
+            var userAccount = await Task.Run(() => users
                 .Where(x => x.userId == id)
-                .FirstOrDefault();
+                .FirstOrDefault());
             return userAccount;
         }
 
-        public IEnumerable<UserAccount> GetUsers()
+        public async Task<IEnumerable<UserAccount>> GetUsersAsync()
         {
-            return users;
+            return await Task.Run(() => users);
         }
 
-        public Account WithdrawAmount(UserAccount user, Account account, decimal amount)
+        public async Task<Account> WithdrawAmountAsync(UserAccount user, Account account, decimal amount)
         {
             var balance = account.Balance;
             balance -= amount;
-            account.Balance = balance;
+            await Task.Run(() => account.Balance = balance);
             return account;
         }
     }

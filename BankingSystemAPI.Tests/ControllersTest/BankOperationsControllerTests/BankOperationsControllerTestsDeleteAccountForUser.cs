@@ -16,16 +16,16 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
     internal class BankOperationsControllerTestsDeleteAccountForUser
     {
         private BankOperationsController _controller;
-        private IBankingOperationsRepository _repository;
+        private IBankOperationsService _service;
         private ILoggingService _logger;
 
         [SetUp]
         public void SetUp()
         {
             //using NSubstitute for mocking here because I have experience with this framework
-            _repository = Substitute.For<IBankingOperationsRepository>();
+            _service = Substitute.For<IBankOperationsService>();
             _logger = Substitute.For<ILoggingService>();
-            _controller = new BankOperationsController(_repository, _logger);
+            _controller = new BankOperationsController(_service, _logger);
         }
 
         [Test]
@@ -58,19 +58,16 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                 }
             };
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
-            _repository.DeleteAccountForUser(Arg.Any<UserAccount>(), Arg.Any<string>());
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
+            _service.DeleteAccountForUserAsync(Arg.Any<UserAccount>(), Arg.Any<string>());
 
             //Act
 
-            _controller.DeleteAccountFromUser(id, account2);
-
+            _controller.DeleteAccountFromUserAsync(id, account2);
 
             //Assert
             
            _logger.Received(1).LogInformation($"Deleted account from user {id}");
-
-           
 
         }
 
@@ -105,11 +102,11 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
                 }
             };
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
 
             //Act
 
-            var result = _controller.DeleteAccountFromUser(id, account3);
+            var result = _controller.DeleteAccountFromUserAsync(id, account3).Result;
 
 
             //Assert
@@ -132,11 +129,11 @@ namespace BankingSystemAPI.Tests.ControllersTest.BankOperationsControllerTests
             var account3 = "test-account-not-existing";
             UserAccount userAccount = null;
 
-            _repository.GetUser(Arg.Any<string>()).Returns(userAccount);
+            _service.GetUserAccountAsync(Arg.Any<string>()).Returns(userAccount);
 
             //Act
 
-            var result = _controller.DeleteAccountFromUser(id, account3);
+            var result = _controller.DeleteAccountFromUserAsync(id, account3).Result;
 
 
             //Assert

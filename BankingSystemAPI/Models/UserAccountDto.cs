@@ -8,7 +8,7 @@ namespace BankingSystemAPI.Models
         public string? FirstName { get; set; }
         [Required]
         public string? LastName { get; set; }
-        [Required]
+        [Required(ErrorMessage ="Email Field is required.")]
         public string? Email { get; set; }
 
         public IList<AccountDto> Accounts { get; set; }

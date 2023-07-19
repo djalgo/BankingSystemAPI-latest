@@ -2,6 +2,7 @@
 using BankingSystemAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using BankingSystemAPI.Services;
+using NuGet.Protocol;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -11,16 +12,14 @@ namespace BankingSystemAPI.Controllers
     [ApiController]
     public class BankOperationsController : ControllerBase
     {
-        private readonly IBankingOperationsRepository _bankingOperationsRepository;
+        private readonly IBankOperationsService _bankOperationsService;
         private readonly ILoggingService _logger;
 
-        //List<UserAccount> users = new List<UserAccount>();
-
-        public BankOperationsController(IBankingOperationsRepository bankingOperationsRepository,
+        public BankOperationsController(IBankOperationsService bankOperationsService,
             ILoggingService logger)
         {
-            _bankingOperationsRepository = bankingOperationsRepository;
-            _logger = logger;
+            _bankOperationsService = bankOperationsService ?? throw new ArgumentNullException(nameof(bankOperationsService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -29,9 +28,10 @@ namespace BankingSystemAPI.Controllers
         /// <returns>The list of Users.</returns>
         [HttpGet]
         [Route("GetUserAccounts")]
-        public IEnumerable<UserAccount> GetUserAccounts()
+        public async Task<IActionResult> GetUserAccountsAsync()
         {
-            return _bankingOperationsRepository.GetUsers();
+            var result = await _bankOperationsService.GetUserAccountsAsync();
+            return Ok(result);
         }
 
         /// <summary>
@@ -40,11 +40,12 @@ namespace BankingSystemAPI.Controllers
         /// <returns>The new user created.</returns>
         // POST api/<ValuesController>
         [HttpPost]
-        [Route("AddUser")]
-        public IActionResult PostNewUser([FromBody] UserAccountDto userDto)
+        [Route("AddNewUserAccount")]
+        public async Task<IActionResult> AddNewUserAccountAsync([FromBody] UserAccountDto userDto)
         {
             if (userDto == null) {
-                return BadRequest("User ca't be null");
+                _logger.LogError($"User can't be null");
+                return BadRequest($"User can't be null");
             }
 
             if (userDto.Accounts == null)
@@ -52,38 +53,15 @@ namespace BankingSystemAPI.Controllers
                 _logger.LogError($"User must have at least one account associated.");
                 return BadRequest("User must have at least one account associated.");
             }
-            var accountUserId = Guid.NewGuid().ToString();
-            var accountList = new List<Account>();
-
-            if (EmailAlreadyExists(userDto.Email)){
+            
+            if (await EmailAlreadyExistsAsync(userDto.Email)){
                 return BadRequest("Email should be unique for a record.");
             }
-            
-            foreach (var account in userDto.Accounts)
-            {
-               if(account.Balance < 100)
-               {
-                    _logger.LogError($"The balance mustn't be less that 100$ at any time.");
-                     return BadRequest($"The balance mustn't be less that 100$ at any time.");
-               }
-               accountList.Add(new Account
-               {
-                  AccountUserId = accountUserId,
-                  AccountNumber = Guid.NewGuid().ToString(),
-                  Balance = account.Balance
-               });
-             }
-            
-            var user = new UserAccount()
-            {
-                userId = accountUserId,
-                FirstName = userDto.FirstName,
-                LastName = userDto.LastName,
-                Email = userDto.Email,
-                Accounts = accountList
-            };
-            var result = _bankingOperationsRepository.AddUser(user);
 
+            var result = new UserAccount();
+            
+            result = await _bankOperationsService.AddNewUserAccountAsync(userDto);
+            
             return Ok(result);
 
         }
@@ -94,14 +72,14 @@ namespace BankingSystemAPI.Controllers
         /// <returns>The new created acount</returns>
         [HttpPost]
         [Route("CreateAccountForUser/{accountUserId}")]
-        public IActionResult CreateAccount(string accountUserId, [FromBody] AccountDto accountDto)
+        public async Task<IActionResult> CreateAccountForUserAsync(string accountUserId, [FromBody] AccountDto accountDto)
         {
             if (accountDto == null)
             {
                 _logger.LogError($"Account can't be null");
                 return BadRequest("Account can't be null");
             }
-            var userAccount = _bankingOperationsRepository.GetUser(accountUserId);
+            var userAccount = await _bankOperationsService.GetUserAccountAsync(accountUserId);
 
             if (userAccount == null)
             {
@@ -114,15 +92,8 @@ namespace BankingSystemAPI.Controllers
                 _logger.LogError($"Account must have minimum of 100$ at any time");
                 return BadRequest($"Account must have minimum of 100$ at any time");
             }
-            //var accountUserId = Guid.NewGuid().ToString();
-            var account = new Account
-            {
-                AccountUserId = userAccount.userId,
-                AccountNumber = Guid.NewGuid().ToString(),
-                Balance = accountDto.Balance
-            };
-
-            var newAccount = _bankingOperationsRepository.CreateAccountForUser(userAccount, account);
+            
+            var newAccount = await _bankOperationsService.CreateAccountForUserAsync(userAccount, accountDto);
 
             return Ok(newAccount);
 
@@ -135,9 +106,9 @@ namespace BankingSystemAPI.Controllers
         // DELETE api/<ValuesController>/5
         [HttpDelete]
         [Route("DeleteAccountForUser/{accountUserId}/{accountNumber}")]
-        public IActionResult DeleteAccountFromUser(string accountUserId, string accountNumber)
+        public async Task<IActionResult> DeleteAccountFromUserAsync(string accountUserId, string accountNumber)
         {
-            var userAccount = _bankingOperationsRepository.GetUser(accountUserId);
+            var userAccount = await _bankOperationsService.GetUserAccountAsync(accountUserId);
 
             if(userAccount == null)
             {
@@ -151,16 +122,21 @@ namespace BankingSystemAPI.Controllers
                 return NotFound($"The account number was not found for the user - {accountNumber}");
             }
 
-            _bankingOperationsRepository.DeleteAccountForUser(userAccount, accountNumber);
+            await _bankOperationsService.DeleteAccountForUserAsync(userAccount, accountNumber);
             _logger.LogInformation($"Deleted account from user {accountUserId}");
             return Ok();
         }
 
-        private bool EmailAlreadyExists(string email)
+        /// <summary>
+        /// Validates for existing user
+        /// </summary>
+        /// <param name="email"></param>
+        /// <returns>True or false</returns>
+        private async Task<bool> EmailAlreadyExistsAsync(string email)
         {
             if(email != null)
             {
-                var users = _bankingOperationsRepository.GetUsers();
+                var users = await _bankOperationsService.GetUserAccountsAsync();
                 if(users == null)
                 {
                     return false;

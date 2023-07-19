@@ -2,7 +2,7 @@
 using BankingSystemAPI.Repository;
 using BankingSystemAPI.Services;
 using Microsoft.AspNetCore.Mvc;
-
+using System.Text.Json;
 
 namespace BankingSystemAPI.Controllers
 {
@@ -10,12 +10,14 @@ namespace BankingSystemAPI.Controllers
     [ApiController]
     public class TransactionController : ControllerBase
     {
-        private readonly IBankingOperationsRepository _bankingOperationsRepository;
+        private readonly IBankOperationsService _bankOperationsService;
+        private readonly ITransactionService _transactionService;
         private readonly ILoggingService _logger;
 
-        public TransactionController(IBankingOperationsRepository bankingOperationsRepository, ILoggingService logger)
+        public TransactionController(IBankOperationsService bankOperationsService, ITransactionService transactionService, ILoggingService logger)
         {
-            _bankingOperationsRepository = bankingOperationsRepository;
+            _bankOperationsService = bankOperationsService;
+            _transactionService = transactionService;
             _logger = logger;
         }
 
@@ -29,9 +31,9 @@ namespace BankingSystemAPI.Controllers
         // GET: api/<TransactionController>
         [HttpPut]
         [Route("deposit/{accountUserId}/{accountNumber}/{amount}")]
-        public IActionResult Deposit(string accountUserId, string accountNumber, decimal amount)
+        public async Task<IActionResult> DepositAsync(string accountUserId, string accountNumber, decimal amount)
         {
-            var userAccount = _bankingOperationsRepository.GetUser(accountUserId);
+            var userAccount = await _bankOperationsService.GetUserAccountAsync(accountUserId);
             if (userAccount == null)
             {
                 _logger.LogError($"User not found - {accountUserId}");
@@ -44,14 +46,13 @@ namespace BankingSystemAPI.Controllers
                 _logger.LogError($"Account not found - {accountNumber}");
                 return NotFound($"Account not found - {accountNumber}");
             }
-
-            if(amount > 10000 || amount <= 0)
+            var errors = await _transactionService.ValidateDepositAmountAsync(amount);
+            if (errors.Any())
             {
-                _logger.LogError($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction.");
-                return BadRequest($"The amount must be non-negative or non-zero or less than 10000$ in a single transaction.");
+                return BadRequest(errors);
             }
 
-            var result = _bankingOperationsRepository.DepositAmount(userAccount, account, amount);
+            var result = await _transactionService.DepositAmountAsync(userAccount, account, amount);
             return Ok(result);
 
         }
@@ -65,9 +66,9 @@ namespace BankingSystemAPI.Controllers
         /// <returns>The account detail with updated amount.</returns>
         [HttpPut]
         [Route("withdraw/{accountUserId}/{accountNumber}/{amount}")]
-        public IActionResult Withdraw(string accountUserId, string accountNumber, decimal amount)
+        public async Task<IActionResult> WithdrawAsync(string accountUserId, string accountNumber, decimal amount)
         {
-            var userAccount = _bankingOperationsRepository.GetUser(accountUserId);
+            var userAccount = await _bankOperationsService.GetUserAccountAsync(accountUserId);
             if (userAccount == null)
             {
                 _logger.LogError($"User not found - {accountUserId}");
@@ -80,34 +81,16 @@ namespace BankingSystemAPI.Controllers
                 _logger.LogError($"The account number was not found for the user - {accountNumber}");
                 return NotFound($"The account number was not found for the user - {accountNumber}");
             }
+            var validationErrors = await _transactionService.ValidateWithdrawAmountAsync(account, amount);
+            if(validationErrors.Any())
+            {
+                return BadRequest(validationErrors);
+            }
 
-            var balance = account.Balance;
+            var result = new Account();
             
-            if(amount > balance)
-            {
-                _logger.LogError($"Insufficient funds - {accountNumber}");
-                return BadRequest($"Insufficient funds - {accountNumber}");
-            }
-            var balanceAfterWithdrawal = balance - amount;
-            var percentWithdrawal = (int) amount / balance * 100;
-
-            if(percentWithdrawal > 90) {
-                _logger.LogError($"Invalid Amount. Withdrawing more than 90% of the current balance is not allowed. " +
-                    $"Current withdrawal amount is {percentWithdrawal}% of the balance.");
-                return BadRequest($"Invalid Amount. Withdrawing more than 90% of the current balance is not allowed. " +
-                    $"Current withdrawal amount is {percentWithdrawal}% of the balance.");
-            }
-
-            if( balanceAfterWithdrawal < 100)
-            {
-                _logger.LogError($"Invalid Amount. The account must have at least 100$ at any point. " +
-                    $"Current amount will be {balanceAfterWithdrawal}$.");
-                return BadRequest($"Invalid Amount. The account must have at least 100$ at any point. " +
-                    $"Current amount will be {balanceAfterWithdrawal}$.");
-            }
-
-
-            var result = _bankingOperationsRepository.WithdrawAmount(userAccount, account, amount);
+            result = await _transactionService.WithdrawAmountAsync(userAccount, account, amount);
+            
             return Ok(result);
 
         }
